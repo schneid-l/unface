@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+          cache: true
+      - name: Run go vet
+        run: go vet ./...
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.5.0
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: ["1.25", "1.26"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+      - name: Build
+        shell: bash
+        run: go build ./...
+      - name: Test
+        shell: bash
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.go == '1.25'
+        uses: codecov/codecov-action@v6
+        with:
+          files: ./coverage.out
+          fail_ci_if_error: false
+
+  coverage-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+          cache: true
+      - name: Measure core-package coverage
+        run: |
+          go test -race \
+            -coverpkg=github.com/schneid-l/unface,github.com/schneid-l/unface/engine,github.com/schneid-l/unface/plugin,github.com/schneid-l/unface/unfacers,github.com/schneid-l/unface/internal/walker,github.com/schneid-l/unface/internal/tag \
+            -covermode=atomic -coverprofile=core.out ./...
+          total=$(go tool cover -func=core.out | awk '/^total:/ {print $3}' | tr -d '%')
+          echo "Total coverage: $total%"
+          threshold=90
+          awk -v t="$total" -v g="$threshold" 'BEGIN { exit (t+0 < g+0) ? 1 : 0 }' \
+            || { echo "::error::Coverage $total% is below the $threshold% gate"; exit 1; }

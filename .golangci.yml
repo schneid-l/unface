@@ -1,0 +1,60 @@
+version: "2"
+
+run:
+  timeout: 5m
+  go: "1.23"
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - unparam
+    - gocritic
+    - revive
+    - bodyclose
+    - errorlint
+    - exhaustive
+    - copyloopvar
+    - prealloc
+    - unconvert
+    - whitespace
+  settings:
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+          disabled: false
+    gocritic:
+      disabled-checks:
+        - ifElseChain
+        - singleCaseSwitch
+    exhaustive:
+      default-signifies-exhaustive: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gocritic
+
+formatters:
+  enable:
+    - gofumpt
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/schneid-l/unface)
+    gofumpt:
+      extra-rules: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
