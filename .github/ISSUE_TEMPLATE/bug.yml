@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a defect in unface
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and a minimal reproducer.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: unface version
+    validations:
+      required: true
+  - type: input
+    id: go
+    attributes:
+      label: Go version
+    validations:
+      required: true
